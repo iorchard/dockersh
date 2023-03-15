@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # PYTHON_ARGCOMPLETE_OK
 import os
+import subprocess
 os.environ['TERM'] = 'xterm' # removes warning on non-tty commands
 import time
 import argparse
@@ -94,11 +95,7 @@ def selection_menu(choices):
         assert(0 <= i < len(choices))
     return i
 
-#if __name__ == "__main__":
 def parse_args():
-
-
-
     parser = argparse.ArgumentParser(prog=prog)
     parser.add_argument('--version',
                         action='version',
@@ -155,7 +152,6 @@ if cfg.has_section("ADMIN") and "command" in cfg["ADMIN"]:
         admin_shell = cfg["ADMIN"]["admin_shell"]
 ini = cfg[user] if cfg.has_section(user) else cfg['DEFAULT']
 
-#if __name__ == "__main__":
 args = parse_args()
 
 if args.cmd == admin_cmd:
@@ -234,6 +230,7 @@ if len(containers(container_filter=args.name)) == 0:
 
     host_config = cli.create_host_config(
         binds=binds,
+        port_bindings={8888:args.ini['jupyter_port']},
         restart_policy={'Name' : 'unless-stopped'})
 
     #cli.pull(args.image)
@@ -244,6 +241,7 @@ if len(containers(container_filter=args.name)) == 0:
                          name=args.full_name,
                          hostname=args.name,
                          labels={'group': prog, 'user': user},
+                         ports=[8888],
                          volumes=volumes,
                          working_dir=args.home,
                          environment={
@@ -259,11 +257,16 @@ if len(containers(container_filter=args.name)) == 0:
 
 cli.start(args.full_name)
 # check container is running.
-print("Wait for the container is running.")
+print("Wait until your container is ready...")
+l_args = ['docker', 'exec', args.full_name, 'bash', '-c', '[[ -f /tmp/.i_am_ready ]]']
 for i in range(5):
     if is_container_running(args.full_name):
-        print("The container is ready.")
-        break
+        o_res = subprocess.Popen(l_args, stdout=subprocess.PIPE)
+        o_res.wait()
+        if o_res.returncode == 0:
+            print("The container is ready.")
+            break
+    print("Stil waiting...")
     time.sleep(3)
 
 if len(args.cmd) == 0:
@@ -278,7 +281,7 @@ if user_bash == "":
 cmd = args.cmd if args.cmd else user_bash
 
 cmd = "/bin/bash -c \"" + cmd + "\""
- 
+
 # a tty needs -it, scp needs -i
 docker_arg = "-i" if not sys.stdout.isatty() or is_scp_cmd else "-it"
 os.system('docker exec -u '+user+" " + docker_arg +' '+ args.full_name + ' ' + cmd+"")
