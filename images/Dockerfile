@@ -9,6 +9,7 @@ RUN  apt-get update && \
        curl \
        git \
        less \
+       locales \
        openssh-client \
        python3.7 python3.8 \
        sudo \
@@ -24,6 +25,8 @@ RUN  apt-get update && \
        jupyterlab \
        tensorflow==${TF_VER} \
        tensorrt && \
-     pip cache purge 
+     pip cache purge
+RUN  locale-gen ko_KR.UTF-8
+ENV LC_ALL ko_KR.UTF-8
 
 ENTRYPOINT ["/scripts/user_mapping.sh"]
