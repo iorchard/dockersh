@@ -17,6 +17,11 @@ if ! grep "^${HOST_USER_NAME}" /etc/sudoers &>/dev/null; then
   echo "${HOST_USER_NAME} ALL=(ALL:ALL) NOPASSWD:ALL" >> /etc/sudoers
 fi
 
+# create shared dir and symlink /data and /archive
+mkdir -p /home/${HOST_USER_NAME}/shared
+ln -sf /data /home/${HOME_USER_NAME}/shared/data
+ln -sf /archive /home/${HOME_USER_NAME}/shared/archive
+
 # set ownership for hot and cold data directory.
 chown ${HOST_USER_ID}:${HOST_USER_GID} \
   /home/${HOST_USER_NAME}
